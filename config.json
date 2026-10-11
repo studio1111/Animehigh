@@ -1,0 +1,10 @@
+{
+  "feeds": [],
+  "allowed_download_hosts": [],
+  "max_file_size_mb": 45,
+  "download_dir": "downloads",
+  "state_file": "data/state.json",
+  "dry_run": true,
+  "poll_limit_per_feed": 30,
+  "request_timeout_seconds": 30
+}

@@ -1,0 +1,39 @@
+name: Retain latest 30 workflow runs
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '43 4 * * 0'
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Delete runs older than the latest 30
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const runs = await github.paginate(
+              github.rest.actions.listWorkflowRunsForRepo,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                per_page: 100
+              }
+            );
+            runs.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            const obsolete = runs.slice(30);
+            core.info(`Found ${runs.length} runs; keeping ${Math.min(30, runs.length)} and deleting ${obsolete.length}.`);
+            for (const run of obsolete) {
+              await github.rest.actions.deleteWorkflowRun({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                run_id: run.id
+              });
+              core.info(`Deleted run ${run.id} (${run.name}, ${run.created_at}).`);
+            }

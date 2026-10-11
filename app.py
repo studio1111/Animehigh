@@ -148,30 +148,42 @@ def download_media(url: str, title: str, config: dict) -> Path:
     max_bytes = int(config["max_file_size_mb"]) * 1024 * 1024
     timeout = int(config["request_timeout_seconds"])
 
-    with requests.get(
-        url, stream=True, timeout=timeout,
-        headers={"User-Agent": USER_AGENT}, allow_redirects=False
-    ) as response:
-        response.raise_for_status()
-        if response.status_code in (301, 302, 303, 307, 308):
-            raise ValueError("Redirected media URLs are rejected; configure the final authorized host.")
-        declared = response.headers.get("Content-Length")
-        if declared and int(declared) > max_bytes:
-            raise ValueError("Media exceeds configured size limit.")
-        written = 0
-        with temp_path.open("wb") as output:
-            for chunk in response.iter_content(chunk_size=1024 * 1024):
-                if not chunk:
-                    continue
-                written += len(chunk)
-                if written > max_bytes:
-                    raise ValueError("Media exceeded configured size limit during download.")
-                output.write(chunk)
-    if temp_path.stat().st_size < 1024:
+    try:
+        with requests.get(
+            url, stream=True, timeout=timeout,
+            headers={"User-Agent": USER_AGENT}, allow_redirects=False
+        ) as response:
+            if response.status_code in (301, 302, 303, 307, 308):
+                raise ValueError("Redirected media URLs are rejected; configure the final authorized host.")
+            response.raise_for_status()
+            declared = response.headers.get("Content-Length")
+            if declared and int(declared) > max_bytes:
+                raise ValueError("Media exceeds configured size limit.")
+            written = 0
+            with temp_path.open("wb") as output:
+                for chunk in response.iter_content(chunk_size=1024 * 1024):
+                    if not chunk:
+                        continue
+                    written += len(chunk)
+                    if written > max_bytes:
+                        raise ValueError("Media exceeded configured size limit during download.")
+                    output.write(chunk)
+        if temp_path.stat().st_size < 1024:
+            raise ValueError("Downloaded file is too small to be a valid video.")
+        with temp_path.open("rb") as check:
+            header = check.read(12)
+        suffix = final_path.suffix.lower()
+        is_matroska = header.startswith(bytes.fromhex("1A45DFA3"))
+        is_mp4_family = len(header) >= 8 and header[4:8] == b"ftyp"
+        if suffix in {".mkv", ".webm"} and not is_matroska:
+            raise ValueError("Downloaded content does not have a Matroska/WebM file signature.")
+        if suffix in {".mp4", ".mov"} and not is_mp4_family:
+            raise ValueError("Downloaded content does not have an MP4/MOV file signature.")
+        temp_path.replace(final_path)
+        return final_path
+    except Exception:
         temp_path.unlink(missing_ok=True)
-        raise ValueError("Downloaded file is too small to be a valid video.")
-    temp_path.replace(final_path)
-    return final_path
+        raise
 
 
 def rubika_request(token: str, method: str, payload: dict, timeout: int = 30) -> dict:

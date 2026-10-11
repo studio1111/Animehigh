@@ -1,6 +1,6 @@
 import unittest
 
-from app import allowed_media_url, parse_feed, safe_filename
+from app import allowed_media_url, parse_feed, safe_filename, telegram_method_for_file
 
 
 class FeedParserTests(unittest.TestCase):
@@ -31,6 +31,8 @@ class FeedParserTests(unittest.TestCase):
     def test_filename_is_sanitized(self):
         self.assertEqual(safe_filename("Episode / 01?", "https://media.example.org/video.mkv"), "Episode _ 01.mkv")
 
-
-if __name__ == "__main__":
-    unittest.main()
+    def test_telegram_uses_video_for_mp4_and_document_for_mkv(self):
+        self.assertEqual(telegram_method_for_file("episode.mp4"), "sendVideo")
+        self.assertEqual(telegram_method_for_file("episode.MP4"), "sendVideo")
+        self.assertEqual(telegram_method_for_file("episode.mkv"), "sendDocument")
+        self.assertEqual(telegram_method_for_file("episode.webm"), "sendDocument")

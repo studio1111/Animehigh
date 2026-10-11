@@ -6,7 +6,7 @@ on:
     - cron: '17 */3 * * *'
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: animehigh-publisher
@@ -28,3 +28,13 @@ jobs:
           RUBIKA_CHAT_ID: ${{ secrets.RUBIKA_CHAT_ID }}
           ANIMEHIGH_DRY_RUN: ${{ vars.ANIMEHIGH_DRY_RUN }}
         run: python app.py
+      - name: Persist duplicate-prevention state
+        if: always()
+        run: |
+          if [ -n "$(git status --porcelain data/state.json)" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add data/state.json
+            git commit -m "chore: update Animehigh publication state [skip ci]"
+            git push
+          fi

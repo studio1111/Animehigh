@@ -26,7 +26,7 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          ANIMEHIGH_DRY_RUN: ${{ vars.ANIMEHIGHBO_DRY_RUN }}
+          ANIMEHIGHBO_DRY_RUN: ${{ vars.ANIMEHIGHBO_DRY_RUN }}
         run: python app.py
       - name: Persist duplicate-prevention state
         if: always()

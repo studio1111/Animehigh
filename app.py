@@ -34,7 +34,7 @@ def load_config(path: str = "config.json") -> dict:
         raise ValueError("'feeds' must be a list")
     if not isinstance(config.get("allowed_download_hosts"), list):
         raise ValueError("'allowed_download_hosts' must be a list")
-    config.setdefault("max_file_size_mb", 1800)
+    config.setdefault("max_file_size_mb", 45)
     config.setdefault("download_dir", "downloads")
     config.setdefault("state_file", "data/state.json")
     config.setdefault("dry_run", True)

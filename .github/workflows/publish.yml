@@ -1,4 +1,4 @@
-name: Animehigh publisher
+name: Animehighbo publisher
 
 on:
   workflow_dispatch:
@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: animehigh-publisher
+  group: animehighbo-publisher
   cancel-in-progress: false
 
 jobs:
@@ -26,7 +26,7 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          ANIMEHIGH_DRY_RUN: ${{ vars.ANIMEHIGH_DRY_RUN }}
+          ANIMEHIGH_DRY_RUN: ${{ vars.ANIMEHIGHBO_DRY_RUN }}
         run: python app.py
       - name: Persist duplicate-prevention state
         if: always()
@@ -35,6 +35,6 @@ jobs:
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git add data/state.json
-            git commit -m "chore: update Animehigh publication state [skip ci]"
+            git commit -m "chore: update Animehighbo publication state [skip ci]"
             git push
           fi

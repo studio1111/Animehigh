@@ -3,7 +3,7 @@ name: Animehigh publisher
 on:
   workflow_dispatch:
   schedule:
-    - cron: '17 */3 * * *'
+    - cron: '*/30 * * * *'
 
 permissions:
   contents: write
@@ -24,8 +24,8 @@ jobs:
       - run: pip install -r requirements.txt
       - name: Run publisher
         env:
-          RUBIKA_TOKEN: ${{ secrets.RUBIKA_TOKEN }}
-          RUBIKA_CHAT_ID: ${{ secrets.RUBIKA_CHAT_ID }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           ANIMEHIGH_DRY_RUN: ${{ vars.ANIMEHIGH_DRY_RUN }}
         run: python app.py
       - name: Persist duplicate-prevention state

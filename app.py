@@ -48,34 +48,39 @@ def local_name(tag: str) -> str:
 
 
 def parse_feed(xml_text: str, limit: int = 30) -> list[dict]:
-    """Parse common RSS and Atom formats without executing feed content."""
+    """Parse common RSS and Atom formats, preferring explicit media enclosures."""
     root = ET.fromstring(xml_text)
     items = []
     for node in root.iter():
         if local_name(node.tag) not in {"item", "entry"}:
             continue
         title = ""
-        link = ""
+        page_link = ""
+        media_link = ""
         for child in list(node):
             name = local_name(child.tag)
             if name == "title" and not title:
                 title = "".join(child.itertext()).strip()
-            elif name == "enclosure" and not link:
-                link = child.attrib.get("url", "").strip()
-            elif name in {"content", "thumbnail"} and not link:
-                link = child.attrib.get("url", "").strip()
+            elif name == "enclosure" and not media_link:
+                media_link = child.attrib.get("url", "").strip()
+            elif name in {"content", "thumbnail"} and not media_link:
+                candidate = child.attrib.get("url", "").strip()
+                if Path(urlparse(candidate).path).suffix.lower() in VIDEO_EXTENSIONS:
+                    media_link = candidate
             elif name == "link":
                 href = child.attrib.get("href", "").strip()
                 rel = child.attrib.get("rel", "alternate").lower()
                 candidate = href or (child.text or "").strip()
-                if candidate and (rel == "enclosure" or not link):
-                    link = candidate
+                if candidate and rel == "enclosure" and not media_link:
+                    media_link = candidate
+                elif candidate and not page_link:
+                    page_link = candidate
+        link = media_link or page_link
         if title and link:
             items.append({"title": title, "url": link})
         if len(items) >= limit:
             break
     return items
-
 
 def allowed_media_url(url: str, allowed_hosts: list[str]) -> bool:
     try:

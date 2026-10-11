@@ -10,7 +10,6 @@ import json
 import logging
 import os
 import re
-import sys
 import time
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -223,9 +222,11 @@ def run() -> int:
     )
     config = load_config()
     state = load_state(config["state_file"])
-    dry_run = config["dry_run"] or os.getenv("ANIMEHIGH_DRY_RUN", "true").lower() in {
-        "1", "true", "yes", "on"
-    }
+    dry_run_setting = os.getenv("ANIMEHIGH_DRY_RUN", "").strip().lower()
+    if dry_run_setting:
+        dry_run = dry_run_setting not in {"0", "false", "no", "off"}
+    else:
+        dry_run = bool(config["dry_run"])
     token = os.getenv("RUBIKA_TOKEN", "")
     chat_id = os.getenv("RUBIKA_CHAT_ID", "")
 
@@ -276,6 +277,7 @@ def run() -> int:
                 if file_hash in state["seen"]:
                     LOG.info("Skipping duplicate file hash: %s", entry["title"])
                     state["published"][identity] = {"duplicate_of": state["seen"][file_hash]}
+                    save_state(config["state_file"], state)
                     continue
                 caption = f"🎬 {entry['title']}\n\nAnimehigh"
                 message_id = rubika_upload_and_send(token, chat_id, media_path, caption)

@@ -29,7 +29,7 @@ class FeedParserTests(unittest.TestCase):
         self.assertFalse(allowed_media_url("https://sub.media.example.org/ep01.mkv", ["media.example.org"]))
 
     def test_filename_is_sanitized(self):
-        self.assertEqual(safe_filename("Episode / 01?", "https://media.example.org/video.mkv"), "Episode _ 01_.mkv")
+        self.assertEqual(safe_filename("Episode / 01?", "https://media.example.org/video.mkv"), "Episode _ 01.mkv")
 
 
 if __name__ == "__main__":

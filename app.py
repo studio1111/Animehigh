@@ -1,4 +1,4 @@
-"""Animehigh: safe publisher for explicitly authorized direct media feeds.
+"""Animehighbo: safe publisher for explicitly authorized direct media feeds.
 
 Only direct video links on configured allow-listed hosts are downloaded.
 Torrent pages, HTML pages, magnets, and unapproved hosts are rejected.
@@ -17,9 +17,9 @@ from urllib.parse import unquote, urlparse
 
 import requests
 
-LOG = logging.getLogger("animehigh")
+LOG = logging.getLogger("animehighbo")
 VIDEO_EXTENSIONS = {".mkv", ".mp4", ".webm", ".mov"}
-USER_AGENT = "AnimehighPublisher/1.0 (+authorized-media-only)"
+USER_AGENT = "AnimehighboPublisher/1.0 (+authorized-media-only)"
 
 
 def load_config(path: str = "config.json") -> dict:
@@ -226,7 +226,7 @@ def run() -> int:
     )
     config = load_config()
     state = load_state(config["state_file"])
-    dry_run_setting = os.getenv("ANIMEHIGH_DRY_RUN", "").strip().lower()
+    dry_run_setting = os.getenv("ANIMEHIGHBO_DRY_RUN", os.getenv("ANIMEHIGH_DRY_RUN", "")).strip().lower()
     if dry_run_setting:
         dry_run = dry_run_setting not in {"0", "false", "no", "off"}
     else:
@@ -283,7 +283,7 @@ def run() -> int:
                     state["published"][identity] = {"duplicate_of": state["seen"][file_hash]}
                     save_state(config["state_file"], state)
                     continue
-                caption = f"🎬 {entry['title']}\n\nAnimehigh"
+                caption = f"🎬 {entry['title']}\n\nAnimehighbo"
                 message_id = telegram_upload_and_send(token, chat_id, media_path, caption)
                 state["seen"][file_hash] = identity
                 state["published"][identity] = {

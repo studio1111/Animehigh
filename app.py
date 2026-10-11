@@ -186,51 +186,38 @@ def download_media(url: str, title: str, config: dict) -> Path:
         raise
 
 
-def rubika_request(token: str, method: str, payload: dict, timeout: int = 30) -> dict:
+def telegram_method_for_file(filename: str) -> str:
+    """Use Telegram's video method only for MP4; keep other containers as documents."""
+    return "sendVideo" if Path(filename).suffix.lower() == ".mp4" else "sendDocument"
+
+
+def telegram_upload_and_send(token: str, chat_id: str, path: Path, caption: str) -> str:
+    """Upload a locally verified, authorized media file to a Telegram chat/channel."""
     if not token:
-        raise RuntimeError("RUBIKA_TOKEN secret is not configured.")
-    url = f"https://botapi.rubika.ir/v3/{token}/{method}"
-    response = requests.post(url, json=payload, timeout=timeout)
-    response.raise_for_status()
-    result = response.json()
-    if not isinstance(result, dict):
-        raise RuntimeError(f"Unexpected Rubika response for {method}.")
-    status = str(result.get("status", "")).upper()
-    if status and status not in {"OK", "SUCCESS"}:
-        raise RuntimeError(f"Rubika {method} failed with status: {status}")
-    return result
-
-
-def rubika_upload_and_send(token: str, chat_id: str, path: Path, caption: str) -> str:
-    """Upload a locally verified file using the documented Rubika Bot API."""
-    upload_result = rubika_request(token, "requestSendFile", {"type": "File"})
-    upload_data = upload_result.get("data", upload_result)
-    upload_url = upload_data.get("upload_url") if isinstance(upload_data, dict) else None
-    if not upload_url:
-        raise RuntimeError("Rubika did not return upload_url for requestSendFile.")
+        raise RuntimeError("TELEGRAM_BOT_TOKEN secret is not configured.")
+    if not chat_id:
+        raise RuntimeError("TELEGRAM_CHAT_ID secret is not configured.")
+    method = telegram_method_for_file(path.name)
+    endpoint = f"https://api.telegram.org/bot{token}/{method}"
+    media_field = "video" if method == "sendVideo" else "document"
+    payload = {"chat_id": chat_id, "caption": caption[:1024]}
+    if method == "sendVideo":
+        payload["supports_streaming"] = "true"
 
     with path.open("rb") as media:
         response = requests.post(
-            upload_url,
-            files={"file": (path.name, media, "application/octet-stream")},
-            timeout=180,
+            endpoint,
+            data=payload,
+            files={media_field: (path.name, media, "application/octet-stream")},
+            timeout=(30, 180),
         )
     response.raise_for_status()
-    uploaded = response.json()
-    upload_data = uploaded.get("data", uploaded) if isinstance(uploaded, dict) else {}
-    file_id = upload_data.get("file_id") if isinstance(upload_data, dict) else None
-    if not file_id:
-        raise RuntimeError("Rubika upload did not return file_id.")
-
-    sent = rubika_request(
-        token, "sendFile",
-        {"chat_id": chat_id, "file_id": file_id, "text": caption},
-        timeout=60,
-    )
-    send_data = sent.get("data", sent)
-    message_id = send_data.get("message_id", "") if isinstance(send_data, dict) else ""
-    return str(message_id)
-
+    result = response.json()
+    if not isinstance(result, dict) or result.get("ok") is not True:
+        description = result.get("description", "Unexpected Telegram API response.") if isinstance(result, dict) else "Unexpected Telegram API response."
+        raise RuntimeError(f"Telegram {method} failed: {description}")
+    message = result.get("result", {})
+    return str(message.get("message_id", ""))
 
 def run() -> int:
     logging.basicConfig(
@@ -244,11 +231,11 @@ def run() -> int:
         dry_run = dry_run_setting not in {"0", "false", "no", "off"}
     else:
         dry_run = bool(config["dry_run"])
-    token = os.getenv("RUBIKA_TOKEN", "")
-    chat_id = os.getenv("RUBIKA_CHAT_ID", "")
+    token = os.getenv("TELEGRAM_BOT_TOKEN", "")
+    chat_id = os.getenv("TELEGRAM_CHAT_ID", "")
 
     if not dry_run and (not token or not chat_id):
-        raise RuntimeError("Set RUBIKA_TOKEN and RUBIKA_CHAT_ID secrets before live publishing.")
+        raise RuntimeError("Set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID secrets before live publishing.")
     if not config["feeds"]:
         LOG.warning("No feeds configured. Nothing to process.")
         return 0
@@ -297,7 +284,7 @@ def run() -> int:
                     save_state(config["state_file"], state)
                     continue
                 caption = f"🎬 {entry['title']}\n\nAnimehigh"
-                message_id = rubika_upload_and_send(token, chat_id, media_path, caption)
+                message_id = telegram_upload_and_send(token, chat_id, media_path, caption)
                 state["seen"][file_hash] = identity
                 state["published"][identity] = {
                     "title": entry["title"],

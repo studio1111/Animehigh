@@ -87,9 +87,9 @@ def parse_feed(xml_text: str, limit: int = 30) -> list[dict]:
 def episode_details(title: str) -> tuple[str, str]:
     """Return a readable anime title and an episode label without guessing."""
     patterns = [
-        r"(?i)\\b(?:episode|ep)\\s*[-.#:]?\\s*(\\d{1,4}(?:\\.\\d+)?)\\b",
-        r"第\\s*(\\d{1,4}(?:\\.\\d+)?)\\s*[話话集期]",
-        r"(?i)\\bS\\d{1,2}\\s*E(\\d{1,4})\\b",
+        r"(?i)\b(?:episode|ep)\s*[-.#:]?\s*(\d{1,4}(?:\.\d+)?)\b",
+        r"第\s*(\d{1,4}(?:\.\d+)?)\s*[話话集期]",
+        r"(?i)\bS\d{1,2}\s*E(\d{1,4})\b",
     ]
     episode = ""
     clean = title.strip()
@@ -99,7 +99,7 @@ def episode_details(title: str) -> tuple[str, str]:
             episode = match.group(1)
             clean = re.sub(pattern, " ", clean).strip(" -|:[]()")
             break
-    return (re.sub(r"\\s+", " ", clean) or title.strip(), episode)
+    return (re.sub(r"\s+", " ", clean) or title.strip(), episode)
 
 
 def parse_episode_feed(xml_text: str, limit: int = 30) -> list[dict]:
@@ -131,7 +131,7 @@ def parse_episode_feed(xml_text: str, limit: int = 30) -> list[dict]:
                     image_url = child.attrib.get("url", "").strip()
             elif name in {"description", "encoded", "summary", "content"} and not image_url:
                 html = "".join(child.itertext())
-                found = re.search(r'<img\\b[^>]*?src=[\\\'"]([^\\\'"]+)', html, re.I)
+                found = re.search(r'<img\b[^>]*?src=[\\'"]([^\\'"]+)', html, re.I)
                 if found:
                     image_url = found.group(1).strip()
         if title and page_url and urlparse(page_url).scheme in {"http", "https"}:
@@ -157,10 +157,10 @@ def page_metadata(page_url: str, timeout: int = 20) -> dict:
         raise ValueError("Episode page redirected to a non-HTTPS URL.")
     html = response.text[:2_000_000]
     values = {}
-    for match in re.finditer(r'<meta\\b[^>]*>', html, re.I):
+    for match in re.finditer(r'<meta\b[^>]*>', html, re.I):
         tag = match.group(0)
-        key_match = re.search(r'(?:property|name)=[\\'"]([^\\'"]+)[\\'"]', tag, re.I)
-        content = re.search(r'\\bcontent=[\\'"]([^\\'"]+)[\\'"]', tag, re.I)
+        key_match = re.search(r'(?:property|name)=[\'"]([^\'"]+)[\'"]', tag, re.I)
+        content = re.search(r'\bcontent=[\'"]([^\'"]+)[\'"]', tag, re.I)
         if key_match and content:
             values.setdefault(key_match.group(1).lower(), content.group(1).strip())
     image = values.get("og:image") or values.get("twitter:image") or values.get("twitter:image:src") or ""
@@ -216,8 +216,8 @@ def telegram_send_episode(token: str, chat_id: str, image_data: bytes, image_typ
     anime_title, inferred_episode = episode_details(title)
     episode = episode or inferred_episode
     caption = f"🎬 {anime_title}"
-    caption += f"\\n📺 قسمت {episode}" if episode else "\\n📺 شمارهٔ قسمت در منبع مشخص نشده"
-    caption += f"\\n\\n🔗 لینک تماشا: {page_url}\\n\\nAnimehighbo"
+    caption += f"\n📺 قسمت {episode}" if episode else "\n📺 شمارهٔ قسمت در منبع مشخص نشده"
+    caption += f"\n\n🔗 لینک تماشا: {page_url}\n\nAnimehighbo"
     extension = {"image/jpeg": "jpg", "image/png": "png", "image/webp": "webp"}.get(image_type, "jpg")
     endpoint = f"https://api.telegram.org/bot{token}/sendPhoto"
     response = requests.post(

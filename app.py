@@ -131,7 +131,7 @@ def parse_episode_feed(xml_text: str, limit: int = 30) -> list[dict]:
                     image_url = child.attrib.get("url", "").strip()
             elif name in {"description", "encoded", "summary", "content"} and not image_url:
                 html = "".join(child.itertext())
-                found = re.search(r'<img\b[^>]*?src=[\\'"]([^\\'"]+)', html, re.I)
+                found = re.search(r"<img\b[^>]*?\bsrc=['"]([^'"]+)", html, re.I)
                 if found:
                     image_url = found.group(1).strip()
         if title and page_url and urlparse(page_url).scheme in {"http", "https"}:
@@ -159,8 +159,8 @@ def page_metadata(page_url: str, timeout: int = 20) -> dict:
     values = {}
     for match in re.finditer(r'<meta\b[^>]*>', html, re.I):
         tag = match.group(0)
-        key_match = re.search(r'(?:property|name)=[\'"]([^\'"]+)[\'"]', tag, re.I)
-        content = re.search(r'\bcontent=[\'"]([^\'"]+)[\'"]', tag, re.I)
+        key_match = re.search(r"(?:property|name)=['"]([^'"]+)['"]", tag, re.I)
+        content = re.search(r"\bcontent=['"]([^'"]+)['"]", tag, re.I)
         if key_match and content:
             values.setdefault(key_match.group(1).lower(), content.group(1).strip())
     image = values.get("og:image") or values.get("twitter:image") or values.get("twitter:image:src") or ""

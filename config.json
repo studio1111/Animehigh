@@ -1,4 +1,5 @@
 {
+  "mode": "links",
   "feeds": [],
   "allowed_download_hosts": [],
   "max_file_size_mb": 45,

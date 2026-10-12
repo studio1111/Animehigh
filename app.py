@@ -157,12 +157,12 @@ def page_metadata(page_url: str, timeout: int = 20) -> dict:
         raise ValueError("Episode page redirected to a non-HTTPS URL.")
     html = response.text[:2_000_000]
     values = {}
-    for match in re.finditer(r'<meta\\b[^>]*(?:property|name)=[\\\'"]([^\\\'"]+)[\\\'"][^>]*>', html, re.I):
+    for match in re.finditer(r'<meta\\b[^>]*>', html, re.I):
         tag = match.group(0)
-        key = match.group(1).lower()
-        content = re.search(r'\\bcontent=[\\\'"]([^\\\'"]+)[\\\'"]', tag, re.I)
-        if content:
-            values.setdefault(key, content.group(1).strip())
+        key_match = re.search(r'(?:property|name)=[\\'"]([^\\'"]+)[\\'"]', tag, re.I)
+        content = re.search(r'\\bcontent=[\\'"]([^\\'"]+)[\\'"]', tag, re.I)
+        if key_match and content:
+            values.setdefault(key_match.group(1).lower(), content.group(1).strip())
     image = values.get("og:image") or values.get("twitter:image") or values.get("twitter:image:src") or ""
     title = values.get("og:title") or values.get("twitter:title") or ""
     from urllib.parse import urljoin

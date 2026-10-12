@@ -1,5 +1,11 @@
 {
-  "feeds": [],
+  "mode": "links",
+  "feeds": [
+    {
+      "name": "منبع مجاز قسمت‌های انیمه",
+      "url": "https://example.org/anime-feed.xml"
+    }
+  ],
   "allowed_download_hosts": [],
   "max_file_size_mb": 45,
   "download_dir": "downloads",

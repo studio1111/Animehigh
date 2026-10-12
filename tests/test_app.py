@@ -1,9 +1,22 @@
 import unittest
 
-from app import allowed_media_url, parse_feed, safe_filename, telegram_method_for_file
+from app import (allowed_media_url, episode_details, parse_episode_feed, parse_feed, safe_filename, telegram_method_for_file)
 
 
 class FeedParserTests(unittest.TestCase):
+    def test_parses_episode_page_and_poster(self):
+        xml = '''<rss><channel><item><title>Moonlit Saga Episode 07</title><link>https://anime.example.org/moonlit/episode-7</link><enclosure url="https://cdn.example.org/poster.jpg" type="image/jpeg"/></item></channel></rss>'''
+        self.assertEqual(parse_episode_feed(xml), [{
+            "title": "Moonlit Saga Episode 07",
+            "url": "https://anime.example.org/moonlit/episode-7",
+            "image_url": "https://cdn.example.org/poster.jpg",
+        }])
+
+    def test_extracts_episode_number_without_guessing(self):
+        self.assertEqual(episode_details("Moonlit Saga Episode 07"), ("Moonlit Saga", "07"))
+        self.assertEqual(episode_details("青い星 第12話"), ("青い星", "12"))
+        self.assertEqual(episode_details("Moonlit Saga latest update"), ("Moonlit Saga latest update", ""))
+
     def test_parses_rss_enclosure(self):
         xml = '''<?xml version="1.0"?><rss><channel><item><title>Episode 01</title><enclosure url="https://media.example.org/ep01.mkv" type="video/x-matroska"/><link>https://example.org/post</link></item></channel></rss>'''
         self.assertEqual(parse_feed(xml), [{"title": "Episode 01", "url": "https://media.example.org/ep01.mkv"}])
